@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use App\Models\User;
+use App\Models\MuridProfile;
+use App\Models\PengajarProfile;
 
 class UserController extends Controller
 {
@@ -156,5 +158,40 @@ class UserController extends Controller
             'status' => 'success',
             'message' => 'User berhasil dihapus'
         ], 200); // 200 OK
+    }
+
+    /**
+     * [GET] /users/{id}/profile
+     * Spek: Admin melihat detail profil (NIM/NIP) user lain
+     */
+    public function showProfile(string $id)
+    {
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json(['message' => 'User tidak ditemukan'], 404);
+        }
+
+        if ($user->role === 'murid') {
+            $profile = MuridProfile::where('user_id', $user->id)->first();
+        } elseif ($user->role === 'pengajar') {
+            $profile = PengajarProfile::where('user_id', $user->id)->first();
+        } else {
+            return response()->json([
+                'status' => 'info',
+                'message' => 'Admin tidak memiliki profil data diri.'
+            ], 200);
+        }
+
+        if (!$profile) {
+            return response()->json([
+                'status' => 'info',
+                'message' => 'User ini belum melengkapi profilnya.'
+            ], 200);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $profile
+        ], 200);
     }
 }
