@@ -64,6 +64,53 @@ class UserController extends Controller
     }
 
     /**
+     * [PUT] /users/{id}
+     * Spek: Update user by ID 
+     */
+    public function update(Request $request, string $id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User tidak ditemukan'
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => ['sometimes', 'string', 'max:255'],
+            'email' => ['sometimes', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'password' => ['sometimes', 'string', 'min:8'],
+            'role' => ['sometimes', 'string', Rule::in(['admin', 'pengajar', 'murid'])],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $data = $validator->validated();
+
+        // kalau password diubah, hash ulang
+        if (isset($data['password'])) {
+            $data['password'] = bcrypt($data['password']);
+        }
+
+        $user->update($data);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User berhasil diupdate',
+            'data' => $user
+        ], 200);
+    }
+
+
+    /**
      * [GET] /users/{id}
      * Spek: Get user by ID (Bisa diakses semua role yg login)
      */
