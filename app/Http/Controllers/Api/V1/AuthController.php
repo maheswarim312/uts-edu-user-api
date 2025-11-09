@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use App\Models\User;
+use Illuminate\Support\Facades\Password; 
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -150,4 +152,52 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Logout berhasil'], 200);
     }
+
+    /**
+     * [POST] /auth/forgot-password
+     * Meminta link reset password
+     */
+    public function forgotPassword(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'Jika email terdaftar, link reset akan dikirim.']);
+        }
+
+        $status = Password::sendResetLink($request->only('email')); 
+
+        return $status === Password::RESET_LINK_SENT
+            ? response()->json(['message' => 'Jika email terdaftar, link reset akan dikirim.'])
+            : response()->json(['message' => 'Gagal mengirim email. Coba lagi nanti.'], 500);
+    }
+
+    /**
+     * [POST] /auth/reset-password
+     * Menyimpan password baru pakai token
+     */
+    public function resetPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => 'required|min:8|confirmed', // (Butuh 'password_confirmation')
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $status = Password::reset($request->all(), function ($user, $password) {
+            $user->password = $password; // Biarkan Model User yg hash otomatis
+            $user->save();
+        });
+
+        return $status === Password::PASSWORD_RESET
+            ? response()->json(['message' => 'Password berhasil di-reset! Silakan login.'])
+            : response()->json(['message' => 'Token tidak valid atau email salah.'], 400);
+    }
+
 }
