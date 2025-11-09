@@ -15,23 +15,32 @@ class UserController extends Controller
     /**
      * [GET] /users
      * Spek: Get semua user (Admin Only)
-     * Filter: ?role=murid
+     * Pagination, Sorting, Filtering, dan Search
      */
     public function index(Request $request)
     {
+        $role = $request->query('role', 'all');
+        $search = $request->query('search', '');
+        $sortBy = $request->query('sort_by', 'id');
+        $sortDirection = $request->query('sort_direction', 'asc');
+        $perPage = $request->query('per_page', 5);
+
         $query = User::query();
 
-        //Terapkan filter ?role
-        if ($request->has('role')) {
-            // Validasi simpel biar aman
-            $request->validate([
-                'role' => ['string', Rule::in(['admin', 'pengajar', 'murid'])]
-            ]);
-            $query->where('role', $request->role);
+        if ($role !== 'all') {
+            $query->where('role', $role);
         }
 
-        //Ambil datanya
-        $users = $query->get();
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $query->orderBy($sortBy, $sortDirection);
+
+        $users = $query->paginate((int)$perPage);
 
         return response()->json($users, 200);
     }
