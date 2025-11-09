@@ -11,6 +11,8 @@ use Illuminate\Validation\Rule;
 use App\Models\User;
 use Illuminate\Support\Facades\Password; 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -71,17 +73,14 @@ class AuthController extends Controller
 
         // Coba autentikasi (login)
         if (!Auth::attempt($request->only('email', 'password'))) {
-            // Gagal login (401 Unauthorized)
             return response()->json([
                 'status' => 'error',
                 'message' => 'Email atau password salah'
             ], 401);
         }
 
-        // Login berhasil, ambil data user
         $user = $request->user();
 
-        // Buat token (Sanctum)
         $token = $user->createToken('auth_token')->plainTextToken;
 
         // Berhasil, berikan response 200 (OK)
@@ -110,7 +109,6 @@ class AuthController extends Controller
     {
         $user = $request->user(); // Ambil user yg login
 
-        // Validasi input
         $validator = Validator::make($request->all(), [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'email' => [
@@ -119,13 +117,10 @@ class AuthController extends Controller
                 'string',
                 'email',
                 'max:255',
-                // Email harus unik, KECUALI untuk ID user ini sendiri
                 Rule::unique('users')->ignore($user->id),
             ],
-            // (Ganti password to be done)
         ]);
 
-        // Jika validasi gagal, kembalikan error 422
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
@@ -134,11 +129,8 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Update data user
-        // validated() hanya ambil data yg sudah lolos validasi
         $user->update($validator->validated()); 
 
-        // Kembalikan data user yang sudah terupdate
         return response()->json($user, 200);
     }
 
@@ -167,11 +159,38 @@ class AuthController extends Controller
             return response()->json(['message' => 'Jika email terdaftar, link reset akan dikirim.']);
         }
 
-        $status = Password::sendResetLink($request->only('email')); 
+        // Buat token acak
+        $token = Str::random(64);
 
-        return $status === Password::RESET_LINK_SENT
-            ? response()->json(['message' => 'Jika email terdaftar, link reset akan dikirim.'])
-            : response()->json(['message' => 'Gagal mengirim email. Coba lagi nanti.'], 500);
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $user->email],
+            [
+                'token' => $token, // Kita TIDAK hash token-nya di API
+                'created_at' => now()
+            ]
+        );
+
+        $frontendUrl = 'https://uts-educonnect-fe.vercel.app';
+
+        $resetLink = $frontendUrl . '/reset-password?token=' . $token . '&email=' . urlencode($user->email);
+
+        $emailBody = "Halo, " . $user->name . ".\n\n"
+                   . "Anda menerima email ini karena kami menerima permintaan reset password untuk akun Anda.\n\n"
+                   . "Klik link di bawah ini untuk reset password:\n"
+                   . $resetLink . "\n\n"
+                   . "Token ini akan kadaluwarsa dalam 60 menit.\n"
+                   . "Jika Anda tidak meminta reset password, abaikan email ini.";
+
+        try {
+            Mail::raw($emailBody, function ($message) use ($user) {
+                $message->to($user->email)
+                        ->subject('Link Reset Password EduConnect Anda');
+            });
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Gagal mengirim email: ' . $e->getMessage()], 500);
+        }
+
+        return response()->json(['message' => 'Jika email terdaftar, link reset akan dikirim.']);
     }
 
     /**
@@ -183,7 +202,7 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'token' => 'required',
             'email' => 'required|email',
-            'password' => 'required|min:8|confirmed', // (Butuh 'password_confirmation')
+            'password' => 'required|min:8|confirmed',
         ]);
 
         if ($validator->fails()) {
