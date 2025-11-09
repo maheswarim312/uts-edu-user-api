@@ -50,8 +50,8 @@ return [
         ],
 
         'mailtrap' => [
-            'transport' => 'mailtrap',
-            'token'     => env('MAILTRAP_TOKEN'),
+            'transport' => 'mailtrap+api',
+            'token'     => env('MAILTRAP_API_KEY'),
             'inbox_id'  => env('MAILTRAP_INBOX_ID'),
         ],
 
