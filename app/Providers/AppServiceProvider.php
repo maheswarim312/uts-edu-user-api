@@ -33,8 +33,8 @@ class AppServiceProvider extends ServiceProvider
             return new MailtrapApiTransport(
                 $config['token'],
                 $config['inbox_id'],
-                $this->app->make('http_client'),
-                $this->app->make(LoggerInterface::class)
+                null,
+                $this->app->make(LoggerInterface::class) // <-- Kita tetap kasih Logger
             );
         });
     }
