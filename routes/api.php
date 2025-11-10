@@ -6,30 +6,28 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\ProfileController;
 
-Route::prefix('v1')->group(function () {
-    Route::post('/auth/register', [AuthController::class, 'register']);
-    Route::post('/auth/login', [AuthController::class, 'login']);
-    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
-    
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::get('/auth/me', [AuthController::class, 'me']);
-        Route::put('/auth/me', [AuthController::class, 'updateProfile']);
+Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 
-        Route::post('/auth/logout', [AuthController::class, 'logout']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/auth/me', [AuthController::class, 'me']);
+    Route::put('/auth/me', [AuthController::class, 'updateProfile']);
 
-        Route::get('/profile/me', [ProfileController::class, 'show']);
-        Route::put('/profile/me', [ProfileController::class, 'update']);
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
 
-        Route::middleware('can:is-admin')->group(function () {
-            Route::get('/users', [UserController::class, 'index']);
-            Route::post('/users', [UserController::class, 'store']);
-            Route::put('/users/{id}', [UserController::class, 'update']);
-            Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    Route::get('/profile/me', [ProfileController::class, 'show']);
+    Route::put('/profile/me', [ProfileController::class, 'update']);
 
-            Route::get('/users/{id}/profile', [UserController::class, 'showProfile']);
-        });
+    Route::middleware('can:is-admin')->group(function () {
+        Route::get('/users', [UserController::class, 'index']);
+        Route::post('/users', [UserController::class, 'store']);
+        Route::put('/users/{id}', [UserController::class, 'update']);
+        Route::delete('/users/{id}', [UserController::class, 'destroy']);
 
-        Route::get('/users/{id}', [UserController::class, 'show']);
+        Route::get('/users/{id}/profile', [UserController::class, 'showProfile']);
     });
+
+    Route::get('/users/{id}', [UserController::class, 'show']);
 });
