@@ -40,11 +40,18 @@ class UserController extends Controller
 
         $query->orderBy($sortBy, $sortDirection);
 
-        $users = $query->paginate((int)$perPage);
+        $paginator = $query->paginate((int)$perPage);
 
-        return response()->json(
-            $users->additional(['status' => 'success'])
-        , 200);
+        $paginationData = $paginator->toArray();
+        
+        $response = [
+            'status' => 'success',
+            'message' => 'Data user berhasil diambil'
+        ];
+        
+        $jsonResponse = array_merge($response, $paginationData);
+        
+        return response()->json($jsonResponse, 200);
     }
 
     /**
