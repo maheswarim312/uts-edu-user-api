@@ -9,6 +9,7 @@ use Illuminate\Validation\Rule;
 use App\Models\User;
 use App\Models\MuridProfile;
 use App\Models\PengajarProfile;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
@@ -24,6 +25,13 @@ class UserController extends Controller
         $sortBy = $request->query('sort_by', 'id');
         $sortDirection = $request->query('sort_direction', 'asc');
         $perPage = $request->query('per_page', 5);
+
+        $stats = [
+            'total_users' => User::count(),
+            'total_pengajar' => User::where('role', 'pengajar')->count(),
+            'total_murid' => User::where('role', 'murid')->count(),
+            'total_admin' => User::where('role', 'admin')->count(),
+        ];
 
         $query = User::query();
 
@@ -50,6 +58,7 @@ class UserController extends Controller
         ];
         
         $jsonResponse = array_merge($response, $paginationData);
+        $jsonResponse['stats'] = $stats;
         
         return response()->json($jsonResponse, 200);
     }
