@@ -220,4 +220,40 @@ class UserController extends Controller
             'data' => $profile
         ], 200);
     }
+
+    /**
+     * [PUT] /users/{id}/reset-password
+     * Spek: Reset password user by ID (Admin Only)
+     */
+    public function resetPasswordByAdmin(Request $request, string $id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User tidak ditemukan'
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user->password = bcrypt($request->password);
+        $user->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Password user berhasil di-reset'
+        ], 200);
+    }
 }
