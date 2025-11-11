@@ -39,6 +39,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'status' => 'success',
+            'message' => 'Profil ditemukan',
             'data' => $profile
         ], 200);
     }

@@ -42,7 +42,9 @@ class UserController extends Controller
 
         $users = $query->paginate((int)$perPage);
 
-        return response()->json($users, 200);
+        return response()->json(
+            $users->additional(['status' => 'success'])
+        , 200);
     }
 
     /**
@@ -71,7 +73,11 @@ class UserController extends Controller
         $user = User::create($validator->validated());
 
         //Berikan response 201 (Created)
-        return response()->json($user, 201);
+       return response()->json([
+            'status' => 'success',
+            'message' => 'User berhasil dibuat',
+            'data' => $user
+        ], 201);
     }
 
     /**
@@ -128,10 +134,8 @@ class UserController extends Controller
     public function show(string $id)
     {
 
-        // Cari user
         $user = User::find($id);
 
-        // Jika tidak ketemu, kasih 404
         if (!$user) {
             return response()->json([
                 'status' => 'error',
@@ -139,8 +143,11 @@ class UserController extends Controller
             ], 404);
         }
 
-        // Kalau ketemu, tampilkan
-        return response()->json($user, 200);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User ditemukan',
+            'data' => $user
+        ], 200);
     }
 
     /**
@@ -162,7 +169,6 @@ class UserController extends Controller
         // Hapus user
         $user->delete();
 
-        // Kembalikan response sukses dengan message
         return response()->json([
             'status' => 'success',
             'message' => 'User berhasil dihapus'
@@ -177,7 +183,10 @@ class UserController extends Controller
     {
         $user = User::find($id);
         if (!$user) {
-            return response()->json(['message' => 'User tidak ditemukan'], 404);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User tidak ditemukan'
+            ], 404);
         }
 
         if ($user->role === 'murid') {
@@ -200,6 +209,7 @@ class UserController extends Controller
 
         return response()->json([
             'status' => 'success',
+            'message' => 'Profil ditemukan',
             'data' => $profile
         ], 200);
     }

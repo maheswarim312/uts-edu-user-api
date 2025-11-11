@@ -47,7 +47,11 @@ class AuthController extends Controller
         ]);
 
         // Berikan response 201 (Created)
-        return response()->json($user, 201);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Registrasi berhasil',
+            'data' => $user
+        ], 201);
     }
 
     /**
@@ -85,9 +89,11 @@ class AuthController extends Controller
 
         // Berhasil, berikan response 200 (OK)
         return response()->json([
+            'status' => 'success',
+            'message' => 'Login berhasil',
             'token' => $token,
             'token_type' => 'Bearer',
-            'user' => $user
+            'data' => $user
         ], 200);
     }
 
@@ -97,8 +103,11 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
-        // User yang sedang login dari token 'auth:sanctum'
-        return response()->json($request->user(), 200);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Data user berhasil diambil',
+            'data' => $request->user()
+        ], 200);
     }
 
     /**
@@ -131,7 +140,11 @@ class AuthController extends Controller
 
         $user->update($validator->validated()); 
 
-        return response()->json($user, 200);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Profil berhasil diupdate',
+            'data' => $user->fresh()
+        ], 200);
     }
 
     /**
@@ -142,7 +155,10 @@ class AuthController extends Controller
         // Revoke token yang sedang dipakai
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'Logout berhasil'], 200);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Logout berhasil'
+        ], 200);
     }
 
     /**
@@ -156,7 +172,10 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if (!$user) {
-            return response()->json(['message' => 'Jika email terdaftar, link reset akan dikirim.']);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Jika email terdaftar, link reset akan dikirim.']
+            );
         }
 
         // Buat token acak
@@ -187,10 +206,16 @@ class AuthController extends Controller
                         ->subject('Link Reset Password EduConnect Anda');
             });
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Gagal mengirim email: ' . $e->getMessage()], 500);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengirim email: ' . $e->getMessage()
+            ], 500);
         }
 
-        return response()->json(['message' => 'Jika email terdaftar, link reset akan dikirim.']);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Jika email terdaftar, link reset akan dikirim.'
+        ]);
     }
 
     /**
@@ -206,17 +231,26 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi error',
+                'errors' => $validator->errors()
+            ], 422);
         }
 
         $status = Password::reset($request->all(), function ($user, $password) {
-            $user->password = $password; // Biarkan Model User yg hash otomatis
+            $user->password = $password; 
             $user->save();
         });
 
         return $status === Password::PASSWORD_RESET
-            ? response()->json(['message' => 'Password berhasil di-reset! Silakan login.'])
-            : response()->json(['message' => 'Token tidak valid atau email salah.'], 400);
+            ? response()->json([
+                'status' => 'success',
+                'message' => 'Password berhasil di-reset! Silakan login.'
+                ])
+            : response()->json([
+                'status' => 'error',
+                'message' => 'Token tidak valid atau email salah.'
+            ], 400);
     }
-
 }
